@@ -16,7 +16,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import rx.Observable;
 import rx.Single;
@@ -29,18 +29,19 @@ public class MainActivity extends AppCompatActivity {
 
     public final static String TAG = MainActivity.class.getSimpleName();
 
-    @Bind(R.id.fab)
+    @BindView(R.id.fab)
     FloatingActionButton fab;
 
-    @Bind(R.id.rx_editText)
+    @BindView(R.id.rx_editText)
     EditText editText;
 
-    @Bind(R.id.content_main)
+    @BindView(R.id.content_main)
     View root;
 
     Subscription editTextSubscription;
     Single<String> singleOperationObservable;
     Subscription singleOperationSubscription;
+    Subscription collectionSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         List<Integer> items = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         //Working with collections
-        Observable
+        collectionSubscription = Observable
                 .from(items)
                 .map(integer -> integer * integer)
                 .subscribeOn(Schedulers.computation())
@@ -96,20 +97,24 @@ public class MainActivity extends AppCompatActivity {
                 .textChanges(editText)
                 .debounce(1000, TimeUnit.MILLISECONDS)
                 .subscribe(charSequence -> {
-            String text = charSequence.toString();
-            if (!text.isEmpty()) snack(text);
-        });
+                    String text = charSequence.toString();
+                    if (!text.isEmpty()) snack(text);
+                });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (collectionSubscription != null && !collectionSubscription.isUnsubscribed()) {
+            Log.d(TAG, "Unsubscribing collectionSubscription");
+            collectionSubscription.unsubscribe();
+        }
         if (editTextSubscription != null && !editTextSubscription.isUnsubscribed()) {
             Log.d(TAG, "Unsubscribing editTextSubscription");
             editTextSubscription.unsubscribe();
         }
         if (singleOperationSubscription != null && !singleOperationSubscription.isUnsubscribed()) {
-            Log.d(TAG, "Unsubscribing singleOperationSubscription"); // Will not be called because Single
+            Log.d(TAG, "Unsubscribing singleOperationSubscription"); 
             singleOperationSubscription.unsubscribe();
         }
     }
