@@ -23,9 +23,6 @@ import rx.Single;
 import rx.SingleSubscriber;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.functions.Action0;
-import rx.functions.Action1;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
@@ -56,11 +53,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Observable simple
         Observable.just("A", "B")
-                .subscribe(new Action1<String>() {
-                    @Override
-                    public void call(String s) {
-                        Log.d(TAG, s);
-                    }
+                .subscribe(s -> {
+                    Log.d(TAG, s);
                 });
 
 
@@ -69,32 +63,12 @@ public class MainActivity extends AppCompatActivity {
         //Working with collections
         Observable
                 .from(items)
-                .map(new Func1<Integer, Integer>() {
-                    @Override
-                    public Integer call(Integer integer) {
-                        return integer * integer;
-                    }
-                })
+                .map(integer -> integer * integer)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnNext(new Action1<Integer>() {
-                    @Override
-                    public void call(Integer integer) {
-                        Log.d(TAG, "onNext integer: " + integer);
-                    }
-                })
-                .doOnCompleted(new Action0() {
-                    @Override
-                    public void call() {
-                        Log.d(TAG, "onCompleted list iteration");
-                    }
-                })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        Log.d(TAG, "Achtung!!!");
-                    }
-                })
+                .doOnNext(integer -> Log.d(TAG, "onNext integer: " + integer))
+                .doOnCompleted(() -> Log.d(TAG, "onCompleted list iteration"))
+                .doOnError(throwable -> Log.d(TAG, "Achtung!!!"))
                 .subscribe();
 
 
@@ -108,34 +82,22 @@ public class MainActivity extends AppCompatActivity {
         })
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .doOnSuccess(new Action1<String>() {
-                    @Override
-                    public void call(String string) {
-                        snack(string);
-                    }
-                }).doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        snack("Error: " + throwable.getLocalizedMessage());
-                    }
-                });
+                .doOnSuccess(string -> snack(string))
+                .doOnError(throwable -> snack("Error: " + throwable.getLocalizedMessage()));
 
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                snack("Long operation started");
-                singleOperationSubscription = singleOperationObservable.subscribe();
-            }
+        fab.setOnClickListener(view -> {
+            snack("Long operation started");
+            singleOperationSubscription = singleOperationObservable.subscribe();
         });
 
 
         // Work with views, debounce
-        editTextSubscription = RxTextView.textChanges(editText).debounce(1000, TimeUnit.MILLISECONDS).subscribe(new Action1<CharSequence>() {
-            @Override
-            public void call(CharSequence charSequence) {
-                String text = charSequence.toString();
-                if (!text.isEmpty()) snack(text);
-            }
+        editTextSubscription = RxTextView
+                .textChanges(editText)
+                .debounce(1000, TimeUnit.MILLISECONDS)
+                .subscribe(charSequence -> {
+            String text = charSequence.toString();
+            if (!text.isEmpty()) snack(text);
         });
     }
 
